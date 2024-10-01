@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Linq.Expressions;
 using Api.Data;
 using Api.ViewObjects;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ namespace Api.Controllers;
 public class ProductsController(StoreContext context) : ControllerBase
 {
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductResponse>))]
     public async Task<IActionResult> GetProduct()
     {
         var products = await context.Product
@@ -23,6 +25,8 @@ public class ProductsController(StoreContext context) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProduct(Guid id)
     {
         var product = await context.Product.SingleOrDefaultAsync(p => p.Uuid == id);
@@ -36,14 +40,12 @@ public class ProductsController(StoreContext context) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IEnumerable<ValidationResult>))]
     public async Task<IActionResult> PutProduct(Guid id, ProductPersistRequest product)
     {
         Expression<Func<Models.Product, bool>> predicate = p => p.Uuid == id;
-
-        if (!product)
-        {
-            return BadRequest(product.Erros);
-        }
 
         var exists = await context.Product.AnyAsync(predicate);
         if (!exists)
@@ -60,12 +62,9 @@ public class ProductsController(StoreContext context) : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<IActionResult> PostProduct(ProductPersistRequest product)
     {
-        if (!product)
-        {
-            return BadRequest(product.Erros);
-        }
         var userId = Guid.Parse(User.Claims.First(c => c.Type == "Id").Value);
         product.CreatedBy = userId;
         context.Product.Add(product);
@@ -75,6 +74,8 @@ public class ProductsController(StoreContext context) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteProduct(Guid id)
     {
         Expression<Func<Models.Product, bool>> predicate = p => p.Uuid == id;

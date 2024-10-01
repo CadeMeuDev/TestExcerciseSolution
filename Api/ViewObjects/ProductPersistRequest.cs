@@ -1,10 +1,11 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Api.Models;
 using FluentValidation;
 
 namespace Api.ViewObjects;
 
-public class ProductPersistRequest
+public class ProductPersistRequest : IValidatableObject
 {
     public string Name { get; set; } = string.Empty!;
 
@@ -16,8 +17,12 @@ public class ProductPersistRequest
     [JsonIgnore]
     public Guid CreatedBy { get; set; }
 
-    [JsonIgnore]
-    public string Erros => string.Join("\n", new ProductCreateRequestValidator().Validate(this).Errors.Select(x => x.ErrorMessage));
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return new ProductCreateRequestValidator()
+            .Validate(this).Errors
+            .Select(v => new ValidationResult(v.ErrorMessage, [v.PropertyName]));
+    }
 
     public static implicit operator Product(ProductPersistRequest product)
     {
@@ -30,12 +35,7 @@ public class ProductPersistRequest
         };
     }
 
-    public static implicit operator bool(ProductPersistRequest product)
-    {
-        return new ProductCreateRequestValidator().Validate(product).IsValid;
-    }
-
-    public class ProductCreateRequestValidator : AbstractValidator<ProductPersistRequest>
+    private sealed class ProductCreateRequestValidator : AbstractValidator<ProductPersistRequest>
     {
         public ProductCreateRequestValidator()
         {
