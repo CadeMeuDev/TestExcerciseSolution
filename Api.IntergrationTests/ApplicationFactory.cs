@@ -18,6 +18,8 @@ public class ApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseContentRoot(AppDomain.CurrentDomain.BaseDirectory);
+
         builder.ConfigureServices(services =>
         {
             var dbContextOptionsDescriptor = services
